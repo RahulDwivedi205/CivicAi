@@ -1,0 +1,134 @@
+// CivicAI Relational Database Schema (PostgreSQL + Prisma)
+// Implements Section 9: Database Design (Core Tables)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CITIZEN
+  STAFF
+  ADMIN
+}
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  TRIAGED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  role         Role       @default(CITIZEN)
+  district     String?
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Complaint {
+  id                 String          @id @default(uuid())
+  publicId           String          @unique // e.g. UP-LKO-2026-1042
+  text               String          @db.Text
+  language           String          @default("Hindi") // Hindi | English | Hinglish
+  district           String          // Lucknow, Varanasi, Gorakhpur, Agra, Kanpur
+  villageOrWard      String
+  latitude           Float?
+  longitude          Float?
+  photoUrl           String?
+  category           String          // roads, sanitation, streetlights, water, drainage
+  categoryConfidence Float           @default(0.85)
+  priority           PriorityLevel   @default(MEDIUM)
+  priorityReason     String?         @db.Text
+  departmentId       String?
+  department         Department?     @relation(fields: [departmentId], references: [id])
+  status             ComplaintStatus @default(SUBMITTED)
+  citizenName        String?
+  citizenContact     String?
+  isDuplicate        Boolean         @default(false)
+  similarityScore    Float?
+  rating             Int?
+  feedback           String?         @db.Text
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  auditLogs          AuditLog[]
+  sourceLinks        ComplaintLink[] @relation("SourceComplaint")
+  targetLinks        ComplaintLink[] @relation("SimilarComplaint")
+
+  @@map("complaints")
+}
+
+model Department {
+  id           String        @id @default(uuid())
+  name         String
+  district     String
+  contactInfo  String
+  officialLink String
+  helpline     String        @default("1533")
+  createdAt    DateTime      @default(now())
+  complaints   Complaint[]
+  routingRules RoutingRule[]
+
+  @@map("departments")
+}
+
+model RoutingRule {
+  id           String     @id @default(uuid())
+  district     String
+  category     String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  lastVerified DateTime   @default(now())
+
+  @@unique([district, category])
+  @@map("routing_rules")
+}
+
+model ComplaintLink {
+  id                 String    @id @default(uuid())
+  complaintId        String
+  complaint          Complaint @relation("SourceComplaint", fields: [complaintId], references: [id])
+  similarComplaintId String
+  similarComplaint   Complaint @relation("SimilarComplaint", fields: [similarComplaintId], references: [id])
+  similarityScore    Float
+  staffDecision      String?   // "CONFIRMED_DUPLICATE" | "MARKED_DISTINCT"
+  createdAt          DateTime  @default(now())
+
+  @@map("complaint_links")
+}
+
+model AuditLog {
+  id          String     @id @default(uuid())
+  complaintId String
+  complaint   Complaint  @relation(fields: [complaintId], references: [id])
+  actorId     String?
+  actor       User?      @relation(fields: [actorId], references: [id])
+  actorName   String     @default("CivicAI System")
+  action      String     // "Submitted", "AI Triaged", "Priority Overridden", etc.
+  oldValue    String?    @db.Text
+  newValue    String?    @db.Text
+  details     String?    @db.Text
+  timestamp   DateTime   @default(now())
+
+  @@map("audit_logs")
+}
