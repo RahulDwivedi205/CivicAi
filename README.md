@@ -121,7 +121,7 @@ CivicAI is structured into 4 modular layers:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/aaryarahul205/CivicAI.git
+git clone https://github.com/RahulDwivedi205/CivicAI.git
 cd CivicAI
 ```
 
@@ -199,3 +199,4 @@ CivicAI/
 
 ## 📜 License
 Distributed under the **MIT License**. Created with dedication by **Rahul** (Rishihood University).
+
