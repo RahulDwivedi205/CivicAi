@@ -4,9 +4,10 @@
   "description": "AI-Powered Civic Complaint Triage Platform for Uttar Pradesh",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host --port 3000",
+    "start": "vite --host --port 3000",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --host --port 3000"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

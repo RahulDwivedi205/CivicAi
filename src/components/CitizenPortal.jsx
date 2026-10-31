@@ -195,12 +195,19 @@ export default function CitizenPortal({
       setSubmittedComplaint(newComplaint);
       setIsSubmitting(false);
 
-      // Trigger Confetti
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.6 }
-      });
+      // Trigger Confetti safely
+      try {
+        const fire = typeof confetti === 'function' ? confetti : (confetti && confetti.default ? confetti.default : null);
+        if (fire) {
+          fire({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 }
+          });
+        }
+      } catch (err) {
+        console.warn('Confetti skipped:', err);
+      }
 
       showToast(isHindi ? `शिकायत दर्ज हो गई! ID: ${publicId}` : `Complaint lodged successfully! ID: ${publicId}`);
     }, 700);
